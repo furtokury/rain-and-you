@@ -1,3 +1,5 @@
+import { migrate } from './task-store.js';
+import { startNotifications } from './notifications.js';
 import { Client, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
 import { getBotToken } from './env.js';
 import { closeDB } from './db.js';
@@ -6,11 +8,21 @@ import { commandMap } from './commands/index.js';
 const token = getBotToken();
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+let stopNotifications = () => {};
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`${readyClient.user.tag} 로그인 완료`);
+  stopNotifications = startNotifications(client);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isAutocomplete()) {
+    try { await commandMap.get(interaction.commandName)?.autocomplete?.(interaction); }
+    catch (error) {
+      console.error('자동완성 실패:', error);
+      if (!interaction.responded) await interaction.respond([]).catch(() => {});
+    }
+    return;
+  }
   if (!interaction.isChatInputCommand()) return;
 
   try {
@@ -39,6 +51,7 @@ let shuttingDown = false;
 async function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
+  stopNotifications();
   await client.destroy();
   await closeDB();
 }
@@ -52,9 +65,10 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 }
 
 try {
+  await migrate();
   await client.login(token);
 } catch {
-  console.error('Discord 로그인 실패: 토큰과 네트워크 연결을 확인해주세요.');
+  console.error('봇 시작 실패: DB 설정, 토큰과 네트워크 연결을 확인해주세요.');
   await shutdown();
   process.exitCode = 1;
 }

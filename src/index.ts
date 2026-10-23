@@ -1,8 +1,9 @@
 import { Client, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
-import { requireEnv } from './env.js';
+import { getBotToken } from './env.js';
+import { closeDB } from './db.js';
 import { commandMap } from './commands/index.js';
 
-const token = requireEnv('DISCORD_BOT_TOKEN');
+const token = getBotToken();
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.once(Events.ClientReady, (readyClient) => {
@@ -34,14 +35,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 client.on(Events.Error, (error) => console.error('Discord 클라이언트 오류:', error));
 
+let shuttingDown = false;
+async function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  await client.destroy();
+  await closeDB();
+}
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.once(signal, () => { void client.destroy(); });
+  process.once(signal, () => {
+    void shutdown().catch(() => {
+      console.error('봇 종료 중 오류가 발생했습니다.');
+      process.exitCode = 1;
+    });
+  });
 }
 
 try {
   await client.login(token);
 } catch {
   console.error('Discord 로그인 실패: 토큰과 네트워크 연결을 확인해주세요.');
-  await client.destroy();
+  await shutdown();
   process.exitCode = 1;
 }

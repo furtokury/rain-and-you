@@ -6,10 +6,11 @@ discord.js + TypeScript로 만든 작은 디스코드 봇입니다.
 
 ## 시작하기
 
-Node.js 22.12 이상을 사용합니다. discord.js는 14.26.4로 고정했습니다.
+Bun 1.3.10 이상을 사용합니다. 개발과 배포 모두 Bun이 TypeScript를 직접 실행합니다.
+discord.js는 14.26.4로 고정했습니다.
 
 ```sh
-npm install
+bun install
 ```
 
 1. [Discord Developer Portal](https://discord.com/developers/applications)에서 앱을 만들고 **Bot**
@@ -29,8 +30,8 @@ npm install
 4. 명령어를 등록하고 봇을 실행합니다.
 
    ```sh
-   npm run deploy:commands
-   npm run dev
+   bun run deploy:commands
+   bun run dev
    ```
 
 5. 테스트 서버에서 `/ping` 또는 `/echo message:안녕`을 입력합니다. 봇 프로세스가 실행 중이어야
@@ -45,7 +46,7 @@ npm install
 ```text
 src/
   index.ts             # 로그인, 이벤트 처리, 명령어 실행과 오류 처리
-  env.ts               # .env 로딩과 필수 값 검사
+  env.ts               # 필수 환경 변수 검사 (.env는 Bun이 자동 로딩)
   deploy-commands.ts   # Discord에 명령어 목록 등록
   commands/
     types.ts           # 공통 Command 타입
@@ -62,11 +63,10 @@ src/
 1. `ping.ts`를 복사해서 `src/commands/hello.ts`를 만듭니다.
 2. `data`의 이름을 `hello`로 바꾸고 설명과 `execute()` 내용을 작성합니다.
 3. `src/commands/index.ts`에서 import하고 `commands` 배열에 추가합니다.
-4. `npm run deploy:commands`를 다시 실행합니다. 이름·설명·옵션 변경이나 명령어 삭제 시에도 다시
+4. `bun run deploy:commands`를 다시 실행합니다. 이름·설명·옵션 변경이나 명령어 삭제 시에도 다시
    등록해야 합니다.
 
-TypeScript 파일의 상대 import는 기존 예제처럼 `.js` 확장자로 작성합니다. 빌드 결과에서 그대로
-실행하기 위한 설정입니다.
+기존 예제의 `.js` 상대 import는 Bun이 해당 `.ts` 파일로 해석합니다.
 
 Discord에는 3초 안에 최초 응답을 보내야 합니다. 오래 걸리는 작업은 먼저 대기 응답을 보내고 완료 시
 수정하세요.
@@ -82,13 +82,19 @@ async execute(interaction) {
 ## 검사와 일반 실행
 
 ```sh
-npm run check   # 타입 검사
-npm run build   # dist/로 컴파일
-npm start       # 컴파일된 봇 실행
+bun run check   # 타입 검사
+bun run start   # Bun으로 봇 실행
 ```
 
-서버에 올릴 때도 `.env` 또는 환경 변수를 설정하고 빌드 후 `npm start`로 실행하면 됩니다. 수정 후에는
-다시 빌드하세요.
+배포 서버에 Bun을 설치하고 소스와 `bun.lock`을 올린 뒤 아래처럼 실행합니다.
+`.env` 또는 서버 환경 변수에 `DISCORD_BOT_TOKEN`을 설정하세요. 별도 빌드는 필요 없습니다.
+
+```sh
+bun install --frozen-lockfile --production
+bun run start
+```
+
+명령어 목록을 변경했다면 `bun run deploy:commands`도 실행하세요.
 
 ## 응답이 없을 때
 

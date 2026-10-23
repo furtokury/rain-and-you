@@ -46,3 +46,27 @@ export function messages(tasks: Task[], current = today()): string[] {
   if (chunk) chunks.push(chunk);
   return chunks;
 }
+
+export function detailMessages(task: Task & {creator_id:string | null; status:string; members:string[]}): string[] {
+  const safe = (value: string) => escapeMarkdown(value).replace(/[\r\n]/g, ' ');
+  const lines = [
+    '**작업 상세**',
+    `의뢰자: ${safe(task.client_name)}`,
+    `곡 제목: ${safe(task.song_title)}`,
+    `상태: ${{active:'미완료',completed:'완료',cancelled:'취소'}[task.status] ?? safe(task.status)}`,
+    `착수일: ${withWeekday(task.start_date)} (KST)`,
+    `마감일: ${withWeekday(task.due_date)} (KST)`,
+    `생성한 사람: ${task.creator_id ? `<@${task.creator_id}>` : '공석 (기존 작업)'}`,
+    `지정 인원: ${task.members.length ? task.members.map(id => `<@${id}>`).join(', ') : '없음'}`,
+    '접근 권한: 생성한 사람, 지정 인원, 서버 관리자 (Administrator)',
+    '가능한 작업: 조회·수정·완료·취소·공유 변경',
+    `작업 ID: ${task.id}`,
+  ];
+  const chunks: string[] = []; let chunk = '';
+  for (const line of lines) {
+    if (chunk.length + line.length + 1 > 1900) { chunks.push(chunk); chunk = ''; }
+    chunk += (chunk ? '\n' : '') + line;
+  }
+  if (chunk) chunks.push(chunk);
+  return chunks;
+}

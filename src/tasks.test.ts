@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { date, deadline, messages, today, label, autocompleteLabel, type Task } from './tasks.js';
-import work from './commands/work.js';
+import { date, deadline, messages, today, label, autocompleteLabel, detailMessages, type Task } from './tasks.js';
+import work, { parseMembers } from './commands/work.js';
 describe('작업 날짜와 목록', () => {
   test('KST 자정 경계', () => {
     expect(today(new Date('2026-10-22T14:59:59Z'))).toBe('2026-10-22');
@@ -26,7 +26,7 @@ describe('작업 날짜와 목록', () => {
   });
   test('명령어 구조와 자동완성', () => {
     const body = work.data.toJSON();
-    expect(body.options?.map(o => o.name)).toEqual(['생성','확인','연기','마감일변경','완료','취소','목록','추가','파기','중단']);
+    expect(body.options?.map(o => o.name)).toEqual(['생성','확인','연기','마감일변경','완료','취소','공유변경','상세','목록','추가','파기','중단']);
   });
 });
 
@@ -37,4 +37,23 @@ test('자동완성에 착수·마감 날짜와 요일을 보존한다', () => {
   expect(long.length).toBeLessThanOrEqual(100);
   expect(long).toContain('마감 2026-10-25 일');
   expect(long).toContain('착수 2026-10-22 목');
+});
+
+test('여러 지정 인원과 중복 및 잘못된 입력 검증', () => {
+  expect(parseMembers('<@123456789012345678> 223456789012345678 <@!123456789012345678>')).toEqual(['123456789012345678','223456789012345678']);
+  expect(parseMembers('')).toEqual([]);
+  expect(() => parseMembers('@everyone')).toThrow();
+});
+
+test('상세 정보는 공석, 권한 대상, 상태, 날짜를 표시하고 긴 응답을 나눈다', () => {
+  const task = {id:'1',client_name:'*의뢰인*',song_title:'곡',start_date:'2026-10-22',due_date:'2026-10-25',creator_id:null,status:'completed',members:['123456789012345678']};
+  const content = detailMessages(task).join('\n');
+  expect(content).toContain('공석 (기존 작업)');
+  expect(content).toContain('<@123456789012345678>');
+  expect(content).toContain('상태: 완료');
+  expect(content).toContain('2026-10-25 일 (KST)');
+  expect(content).toContain('서버 관리자 (Administrator)');
+  expect(content).not.toContain('의뢰자: *의뢰인*');
+  const chunks = detailMessages({...task,client_name:'*'.repeat(100),song_title:'*'.repeat(100),members:Array(50).fill('123456789012345678')});
+  expect(chunks.every(c => c.length <= 1900)).toBe(true);
 });

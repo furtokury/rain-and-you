@@ -70,3 +70,19 @@ export function detailMessages(task: Task & {creator_id:string | null; status:st
   if (chunk) chunks.push(chunk);
   return chunks;
 }
+
+export function personalMessages(contents: string[], user: string, admin: boolean, title: string): string[] {
+  const header = `${title} 대상: <@${user}>\n조회 범위: ${admin ? '서버 전체 작업 (관리자)' : '본인이 접근 가능한 작업'}\n\n`;
+  const limit = 2000 - header.length;
+  return contents.flatMap(content => {
+    const chunks: string[] = [];
+    while (content.length > limit) {
+      const newline = content.lastIndexOf('\n',limit);
+      const end = newline > 0 ? newline : limit;
+      chunks.push(header + content.slice(0,end));
+      content = content.slice(end + (newline > 0 ? 1 : 0));
+    }
+    if (content) chunks.push(header + content);
+    return chunks;
+  });
+}

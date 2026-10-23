@@ -1,7 +1,7 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { Command } from './types.js';
 import { create, change, list, detail } from '../task-store.js';
-import { date, deadline, InputError, label, autocompleteLabel, messages, today, detailMessages } from '../tasks.js';
+import { date, deadline, InputError, label, autocompleteLabel, messages, today, detailMessages, personalMessages } from '../tasks.js';
 export const workAliases: Record<string, string> = {
   '목록': '확인', '추가': '생성', '파기': '취소', '중단': '취소',
 };
@@ -71,6 +71,7 @@ const work: Command = {
       if (output.length > 1 && output[0].length + output[1].length + 1 <= 2000) {
         output.splice(0, 2, `${output[0]}\n${output[1]}`);
       }
+      output = personalMessages(output,i.user.id,access.admin,action === '상세' ? '작업 상세 조회' : '작업 목록');
       await i.editReply({content:output[0],allowedMentions:{parse:[]}});
       for (const content of output.slice(1)) await i.followUp({content,flags:MessageFlags.Ephemeral,allowedMentions:{parse:[]}});
     } catch (error) {

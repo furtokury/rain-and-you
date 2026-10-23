@@ -2,8 +2,8 @@ import { ChannelType, InteractionContextType, MessageFlags, PermissionFlagsBits,
 import type { Command } from './types.js';
 import { getSettings, parseTime, saveSettings, type Settings } from '../settings.js';
 import { InputError } from '../tasks.js';
-export function formatSettings(value: Settings): string {
-  return `현재 알림 설정\n채널: ${value.channel_id ? `<#${value.channel_id}>` : '미설정'}\n시각: ${value.notification_time ? `${value.notification_time} (KST)` : '미설정'}\n알림: ${value.enabled ? '켜짐' : '꺼짐'}`;
+export function formatSettings(value: Settings, user: string): string {
+  return `현재 알림 설정\n설정 대상: <@${user}>\n채널: ${value.channel_id ? `<#${value.channel_id}>` : '미설정'}\n시각: ${value.notification_time ? `${value.notification_time} (KST)` : '미설정'}\n알림: ${value.enabled ? '켜짐' : '꺼짐'}`;
 }
 const settings: Command = {
   data: new SlashCommandBuilder().setName('설정').setDescription('알림 설정 확인 또는 변경 (시각은 KST)')
@@ -23,7 +23,7 @@ const settings: Command = {
       if (!await i.guild.members.fetch(target.id).catch(() => null)) throw new InputError('서버에 있는 사용자를 선택해주세요.');
       if (i.options.getSubcommand() === '확인') {
         const value = await getSettings(i.guildId,target.id);
-        await i.editReply({content:formatSettings(value),allowedMentions:{parse:[]}});
+        await i.editReply({content:formatSettings(value,target.id),allowedMentions:{parse:[]}});
         return;
       }
       const channel = i.options.getChannel('채널');
@@ -40,7 +40,7 @@ const settings: Command = {
       const changed = channel !== null || time !== undefined || enabled !== null;
       if (!changed) throw new InputError('변경할 채널, 시각 또는 알림 여부를 입력해주세요. 현재 설정은 /설정 확인으로 볼 수 있습니다.');
       const value = await saveSettings(i.guildId,target.id,{channel:channel?.id,time,enabled:enabled ?? undefined});
-      await i.editReply({content:`설정을 저장했습니다.\n${formatSettings(value)}`,allowedMentions:{parse:[]}});
+      await i.editReply({content:`설정을 저장했습니다.\n${formatSettings(value,target.id)}`,allowedMentions:{parse:[]}});
     } catch (error) {
       if (error instanceof InputError) { await i.editReply(error.message); return; }
       throw error;

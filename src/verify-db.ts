@@ -84,7 +84,9 @@ try {
   assert.ok(detailedReply.includes('<@323456789012345678>'));
   const completed = active.find(t => t.song_title === '완료할곡')!;
   const reply = await runCommand('완료',{'프로젝트':completed.id});
-  assert.ok(reply.startsWith('작업 완료 처리했습니다.'));
+  assert.ok(reply.includes('작업 완료 처리했습니다.'));
+  assert.ok(reply.includes('작업 목록 대상: <@123456789012345678>'));
+  assert.ok(reply.includes('서버 전체 작업 (관리자)'));
   assert.ok(reply.includes('남은곡'));
   assert.ok(!reply.includes('완료할곡'));
   const remaining = (await list(guild,access))[0];

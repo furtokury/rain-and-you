@@ -17,10 +17,10 @@ test('설정 조회와 변경에 관리자 대상 옵션을 제공한다', () =>
   const options = settings.data.toJSON().options!;
   expect(options.map(o => o.name)).toEqual(['확인','변경']);
   expect('options' in options[0] ? options[0].options?.length ?? 0 : 0).toBe(1);
-  expect(formatSettings({guild_id:'1',channel_id:'123',notification_time:'18:30',enabled:1})).toBe('현재 알림 설정\n채널: <#123>\n시각: 18:30 (KST)\n알림: 켜짐');
-  expect(formatSettings({guild_id:'1',channel_id:null,notification_time:'09:00',enabled:0})).toContain('채널: 미설정');
+  expect(formatSettings({guild_id:'1',channel_id:'123',notification_time:'18:30',enabled:1},'456')).toBe('현재 알림 설정\n설정 대상: <@456>\n채널: <#123>\n시각: 18:30 (KST)\n알림: 켜짐');
+  expect(formatSettings({guild_id:'1',channel_id:null,notification_time:'09:00',enabled:0},'456')).toContain('채널: 미설정');
 });
 
 test('미설정 시각과 알림 OFF 표시', () => {
-  expect(formatSettings({guild_id:'1',channel_id:null,notification_time:null,enabled:0})).toContain('시각: 미설정\n알림: 꺼짐');
+  expect(formatSettings({guild_id:'1',channel_id:null,notification_time:null,enabled:0},'456')).toContain('시각: 미설정\n알림: 꺼짐');
 });

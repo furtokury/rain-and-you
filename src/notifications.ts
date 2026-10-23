@@ -2,7 +2,7 @@ import { PermissionFlagsBits, type Client } from 'discord.js';
 import { getDB } from './db.js';
 import { list } from './task-store.js';
 import { isDue, type Settings } from './settings.js';
-import { messages, today } from './tasks.js';
+import { messages, today, personalMessages } from './tasks.js';
 export function startNotifications(client: Client): () => void {
   let busy = false;
   async function tick() {
@@ -32,7 +32,9 @@ export function startNotifications(client: Client): () => void {
           if (!claimed) continue;
           const channel = await client.channels.fetch(setting.channel_id!);
           if (!channel || !channel.isTextBased() || !channel.isSendable() || !('guildId' in channel) || channel.guildId !== guild) throw new Error('알림 채널을 확인해주세요.');
-          for (const content of messages(await list(guild,{userId:user,admin:member.permissions.has(PermissionFlagsBits.Administrator)}),day)) await channel.send({content:`<@${user}>\n${content}`,allowedMentions:{parse:[]}});
+          const admin = member.permissions.has(PermissionFlagsBits.Administrator);
+          const contents = personalMessages(messages(await list(guild,{userId:user,admin}),day),user,admin,'작업 알림');
+          for (const content of contents) await channel.send({content,allowedMentions:{parse:[]}});
           await db`UPDATE personal_notifications SET sent=TRUE WHERE guild_id=${guild} AND user_id=${user} AND notification_date=${day}`;
         } catch (error) {
           console.error(`서버 ${guild} 매일 알림 실패:`,error);
